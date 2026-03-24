@@ -18,7 +18,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8080:8080"
+      - "8090:8090"
 
 volumes:
   postgres_data:

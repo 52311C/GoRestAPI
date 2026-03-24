@@ -1,168 +1,144 @@
-Absolutely! Here’s a polished, beginner-friendly **README.md** for your Go + Docker + PostgreSQL To-Do API project. It’s ready to use for submission.
 
----
+# Go To-Do API (Docker + PostgreSQL)
 
-# 📄 `README.md`
+A simple REST API built with Go and PostgreSQL, containerized with Docker Compose.
 
-```markdown
-# Go To-Do API (Containerized with Docker & PostgreSQL)
+## Overview
 
-## 🧩 Overview
+This project supports full CRUD for items:
 
-This is a beginner-friendly REST API built with **Golang**, containerized using **Docker**, and using **PostgreSQL** for persistent data storage.  
-It allows users to **create, view, and delete tasks** through simple HTTP endpoints with JSON responses.
+- Create items
+- Read items
+- Update items
+- Delete items
 
-The project demonstrates:
+The app includes:
 
-- Go backend development
-- PostgreSQL database integration
-- Containerization using Docker & Docker Compose
-- Environment configuration using `.env`
+- JSON REST API endpoints
+- PostgreSQL persistence
+- Dockerized local development
+- A simple browser UI for interacting with the API
 
----
+## Tech Stack
 
-## 🛠️ Technology Stack
+- Go
+- PostgreSQL
+- Docker / Docker Compose
+- Go modules: `net/http`, `github.com/lib/pq`, `github.com/joho/godotenv`
 
-- **Language:** Golang
-- **Database:** PostgreSQL
-- **Containerization:** Docker & Docker Compose
-- **Go Modules:** `net/http`, `github.com/lib/pq`, `github.com/joho/godotenv`
+## Project Structure
 
----
-
-## 📁 Project Structure
-
-```
-
+```text
 go-todo-api/
 ├── main.go
 ├── go.mod
 ├── Dockerfile
 ├── docker-compose.yml
-├── .gitignore
-├── .env.example
-├── /handlers
+├── handlers/
 │   └── itemHandler.go
-├── /models
+├── models/
 │   └── item.go
-├── /database
+├── database/
 │   └── db.go
-└── /routes
-└── routes.go
+├── routes/
+│   └── routes.go
+└── static/
+    └── index.html
+```
 
-````
+## Setup
 
----
-
-## ⚙️ Setup Instructions
-
-### 1️⃣ Clone the repository
+1. Clone the repo and enter it:
 
 ```bash
 git clone <your-repo-url>
 cd go-todo-api
-````
+```
 
-### 2️⃣ Create `.env` file
-
-Copy the example `.env`:
+2. Create `.env` from your template (or create it manually):
 
 ```bash
 cp .env.example .env
 ```
 
-Update the values if needed (for example, database password).
-
----
-
-### 3️⃣ Build and Run with Docker Compose
+3. Start services:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-* Go API will run at: `http://localhost:8080/items`
-* PostgreSQL runs in a separate container with persisted data
+## URLs
 
----
+- Web UI: `http://localhost:8090/`
+- Health: `http://localhost:8090/health`
+- Items API: `http://localhost:8090/items`
 
-## 📡 API Endpoints
+## Web UI Usage
 
-| Method | Endpoint      | Description         | Body (JSON)          |
-| ------ | ------------- | ------------------- | -------------------- |
-| GET    | `/items`      | Get all tasks       | N/A                  |
-| POST   | `/items`      | Create a new task   | `{ "name": "Task" }` |
-| DELETE | `/items?id=1` | Delete a task by ID | N/A                  |
+Open `http://localhost:8090/` in your browser.
 
-### Example Requests
+From the UI you can:
 
-**Create Task:**
+- Create an item
+- Update an item by ID
+- Delete an item by ID
+- Refresh the list (GET `/items`)
+
+## API Endpoints
+
+| Method | Endpoint | Description | Body |
+| --- | --- | --- | --- |
+| GET | `/items` | Get all items | N/A |
+| POST | `/items` | Create an item | `{ "name": "Task" }` |
+| PUT | `/items?id=1` | Update an item by ID | `{ "name": "Updated task" }` |
+| DELETE | `/items?id=1` | Delete an item by ID | N/A |
+
+## API Examples
+
+Create:
 
 ```bash
-curl -X POST http://localhost:8080/items \
--H "Content-Type: application/json" \
--d '{"name":"Buy groceries"}'
+curl -X POST http://localhost:8090/items \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Buy groceries"}'
 ```
 
-**Get Tasks:**
+Get all:
 
 ```bash
-curl http://localhost:8080/items
+curl http://localhost:8090/items
 ```
 
-**Delete Task:**
+Update:
 
 ```bash
-curl -X DELETE "http://localhost:8080/items?id=1"
+curl -X PUT "http://localhost:8090/items?id=1" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Buy groceries and milk"}'
 ```
 
----
-
-## 🔧 Project Notes
-
-* **Database:** PostgreSQL is used for persistent storage instead of in-memory storage.
-* **Environment Variables:** Stored in `.env` and loaded using `godotenv`.
-* **Docker:** Docker Compose handles running both the Go API and PostgreSQL containers.
-* **Modular Structure:**
-
-  * `/models` → Data structures
-  * `/database` → Database connection & setup
-  * `/handlers` → Endpoint logic
-  * `/routes` → Mapping URLs to handlers
-
----
-
-## 🤖 AI Assistance
-
-This project was built with the help of AI prompts to:
-
-1. Learn Go and PostgreSQL integration
-2. Generate REST API code
-3. Debug database connection issues
-4. Write Dockerfiles and docker-compose configuration
-5. Create a beginner-friendly project structure
-
----
-
-## 📦 Cleanup
-
-Stop containers and remove them if needed:
+Delete:
 
 ```bash
-docker-compose down
+curl -X DELETE "http://localhost:8090/items?id=1"
 ```
 
-Remove volumes (if you want to reset the database):
+## Cleanup
+
+Stop containers:
 
 ```bash
-docker-compose down -v
+docker compose down
 ```
 
----
+Stop and remove volumes (reset DB data):
 
-## ⚡ Future Improvements
+```bash
+docker compose down -v
+```
 
-* Add `PUT /items?id=1` to update tasks
-* Add timestamps for created/updated tasks
-* Add input validation
-* Add pgAdmin container for database management
+## Future Improvements
+
+- Add timestamps for created/updated tasks
+- Add input validation
+- Add pgAdmin container for DB inspection

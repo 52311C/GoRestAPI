@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Go TODO UI</title>
+    <style>
+      :root {
+        --bg: #f4efe4;
+        --panel: #fffdf7;
+        --ink: #1f2a37;
+        --muted: #5f6b7a;
+        --accent: #136f63;
+        --accent-2: #f4a261;
+        --danger: #c44536;
+        --border: #d8d2c6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 10%, #ffe6a7 0%, transparent 28%),
+          radial-gradient(circle at 90% 90%, #b8f2e6 0%, transparent 30%),
+          var(--bg);
+        min-height: 100vh;
+      }
+
+      .wrap {
+        max-width: 920px;
+        margin: 2rem auto;
+        padding: 1rem;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, #1f2a37 0%, #0f766e 100%);
+        color: #fff;
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 14px 28px rgba(31, 42, 55, 0.22);
+      }
+
+      .hero h1 {
+        margin: 0 0 0.35rem;
+        font-size: 1.5rem;
+        letter-spacing: 0.03em;
+      }
+
+      .hero p {
+        margin: 0;
+        opacity: 0.9;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.07);
+      }
+
+      .card h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1rem;
+      }
+
+      input,
+      button {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 0.65rem 0.75rem;
+        font-size: 0.95rem;
+      }
+
+      input {
+        margin-bottom: 0.65rem;
+        background: #fff;
+      }
+
+      button {
+        border: none;
+        cursor: pointer;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .btn-create {
+        background: var(--accent);
+      }
+
+      .btn-update {
+        background: var(--accent-2);
+        color: #1f2a37;
+      }
+
+      .btn-delete {
+        background: var(--danger);
+      }
+
+      .list-card {
+        margin-top: 1rem;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .toolbar button {
+        width: auto;
+        background: #1f2a37;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0.9rem 0 0;
+      }
+
+      li {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px dashed var(--border);
+        padding: 0.45rem 0;
+      }
+
+      .status {
+        margin-top: 0.75rem;
+        color: var(--muted);
+        min-height: 1.25rem;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      @media (max-width: 800px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>TODO API Dashboard</h1>
+        <p>Use this page to call your Go REST API without touching curl.</p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Create Item</h2>
+          <input id="createName" placeholder="Name" />
+          <button class="btn-create" id="createBtn">POST /items</button>
+        </article>
+
+        <article class="card">
+          <h2>Update Item</h2>
+          <input id="updateId" placeholder="Item ID" type="number" />
+          <input id="updateName" placeholder="New Name" />
+          <button class="btn-update" id="updateBtn">PUT /items?id=</button>
+        </article>
+
+        <article class="card">
+          <h2>Delete Item</h2>
+          <input id="deleteId" placeholder="Item ID" type="number" />
+          <button class="btn-delete" id="deleteBtn">DELETE /items?id=</button>
+        </article>
+      </section>
+
+      <section class="card list-card">
+        <div class="toolbar">
+          <h2 style="margin: 0">Items</h2>
+          <button id="refreshBtn">Refresh (GET /items)</button>
+        </div>
+        <ul id="itemsList"></ul>
+        <p id="status" class="status"></p>
+      </section>
+    </main>
+
+    <script>
+      const statusEl = document.getElementById("status");
+      const itemsListEl = document.getElementById("itemsList");
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.classList.toggle("error", isError);
+      }
+
+      async function request(url, options = {}) {
+        const response = await fetch(url, options);
+        const text = await response.text();
+        let payload = null;
+
+        try {
+          payload = text ? JSON.parse(text) : null;
+        } catch (e) {
+          payload = text;
+        }
+
+        if (!response.ok) {
+          const detail = typeof payload === "string" ? payload : JSON.stringify(payload);
+          throw new Error(`${response.status} ${response.statusText}: ${detail}`);
+        }
+
+        return payload;
+      }
+
+      async function loadItems() {
+        try {
+          const items = await request("/items");
+          itemsListEl.innerHTML = "";
+
+          if (!items || items.length === 0) {
+            itemsListEl.innerHTML = "<li>No items yet.</li>";
+            setStatus("Loaded 0 items");
+            return;
+          }
+
+          items.forEach((item) => {
+            const li = document.createElement("li");
+            li.innerHTML = `<span>#${item.id}</span><span>${item.name}</span>`;
+            itemsListEl.appendChild(li);
+          });
+
+          setStatus(`Loaded ${items.length} item(s)`);
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      }
+
+      document.getElementById("createBtn").addEventListener("click", async () => {
+        const name = document.getElementById("createName").value.trim();
+        if (!name) {
+          setStatus("Please enter a name for create", true);
+          return;
+        }
+
+        try {
+          const created = await request("/items", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+          setStatus(`Created item #${created.id}`);
+          document.getElementById("createName").value = "";
+          await loadItems();
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      document.getElementById("updateBtn").addEventListener("click", async () => {
+        const id = document.getElementById("updateId").value.trim();
+        const name = document.getElementById("updateName").value.trim();
+
+        if (!id || !name) {
+          setStatus("Please enter both ID and name for update", true);
+          return;
+        }
+
+        try {
+          await request(`/items?id=${encodeURIComponent(id)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+          setStatus(`Updated item #${id}`);
+          await loadItems();
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      document.getElementById("deleteBtn").addEventListener("click", async () => {
+        const id = document.getElementById("deleteId").value.trim();
+        if (!id) {
+          setStatus("Please enter an ID for delete", true);
+          return;
+        }
+
+        try {
+          await request(`/items?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+          setStatus(`Deleted item #${id}`);
+          await loadItems();
+        } catch (err) {
+          setStatus(err.message, true);
+        }
+      });
+
+      document.getElementById("refreshBtn").addEventListener("click", loadItems);
+
+      loadItems();
+    </script>
+  </body>
+</html>
